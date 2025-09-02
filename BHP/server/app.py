@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import util  # your utility file
+from . import util # your utility file
 from contextlib import asynccontextmanager
 
 # -------------------------------
