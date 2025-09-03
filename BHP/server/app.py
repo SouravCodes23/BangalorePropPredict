@@ -1,17 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from . import util # your utility file
+from . import util  # relative import for util.py
 from contextlib import asynccontextmanager
-
-# -------------------------------
-# Input schema for prediction
-# -------------------------------
-class Property(BaseModel):
-    location: str
-    total_sqft: float
-    bhk: int
-    bath: int
+import os
 
 # -------------------------------
 # Lifespan: load artifacts on startup
@@ -40,22 +34,37 @@ app.add_middleware(
 )
 
 # -------------------------------
-# Routes
+# Serve frontend files
 # -------------------------------
+client_path = os.path.join(os.path.dirname(__file__), "../client")
 
+# Mount static files (CSS, JS)
+app.mount("/static", StaticFiles(directory=client_path), name="static")
+
+# Serve HTML at root
 @app.get("/")
-def read_root():
-    return {"message": "FastAPI backend is running!"}
+def read_index():
+    return FileResponse(os.path.join(client_path, "app.html"))
 
+# -------------------------------
+# Input schema for prediction
+# -------------------------------
+class Property(BaseModel):
+    location: str
+    total_sqft: float
+    bhk: int
+    bath: int
+
+# -------------------------------
+# API endpoints
+# -------------------------------
 @app.get("/get_location_names")
 def get_location_names():
-    """Return list of locations for frontend dropdown"""
     locations = util.get_location_names()
     return {"locations": locations}
 
 @app.post("/predict_home_price")
 def predict_home_price(property: Property):
-    """Predict home price given input data"""
     estimated_price = util.get_estimated_price(
         property.location,
         property.total_sqft,
