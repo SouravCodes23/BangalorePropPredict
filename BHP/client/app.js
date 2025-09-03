@@ -1,3 +1,6 @@
+// ✅ Set your Render backend base URL here
+var baseURL = "https://bangaloreproppredict-3.onrender.com";
+
 function getBathValue() {
   var uiBathrooms = document.getElementsByName("uiBathrooms");
   for (var i in uiBathrooms) {
@@ -20,43 +23,57 @@ function getBHKValue() {
 
 function onClickedEstimatePrice() {
   console.log("Estimate price button clicked");
-  var sqft = document.getElementById("uiSqft");
+
+  var sqft = parseFloat(document.getElementById("uiSqft").value);
   var bhk = getBHKValue();
   var bathrooms = getBathValue();
-  var location = document.getElementById("uiLocations");
+  var location = document.getElementById("uiLocations").value;
   var estPrice = document.getElementById("uiEstimatedPrice");
 
-  // Replace localhost with your Render backend URL
-  var url = "https://bangaloreproppredict-2.onrender.com/predict_home_price";
+  var url = baseURL + "/predict_home_price";
 
-  $.post(url, {
-      total_sqft: parseFloat(sqft.value),
+  // ✅ Use JSON body instead of form POST
+  $.ajax({
+    url: url,
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+      total_sqft: sqft,
       bhk: bhk,
       bath: bathrooms,
-      location: location.value
-  }, function(data, status) {
-      console.log(data.estimated_price);
-      estPrice.innerHTML = "<h2>" + data.estimated_price.toString() + " Lakh</h2>";
-      console.log(status);
+      location: location
+    }),
+    success: function (data) {
+      console.log("Prediction response:", data);
+      if (data && data.estimated_price) {
+        estPrice.innerHTML = "<h2>" + data.estimated_price.toString() + " Lakh</h2>";
+      } else {
+        estPrice.innerHTML = "<h2>No price returned</h2>";
+      }
+    },
+    error: function (xhr, status, error) {
+      console.error("Error:", status, error, xhr.responseText);
+      estPrice.innerHTML = "<h2>Error calculating price</h2>";
+    }
   });
 }
 
 function onPageLoad() {
   console.log("document loaded");
-  // Replace localhost with your Render backend URL
-  var url = "https://bangaloreproppredict-2.onrender.com/get_location_names";
 
-  $.get(url, function(data, status) {
-      console.log("got response for get_location_names request");
-      if (data && data.locations) {
-          var locations = data.locations;
-          var uiLocations = document.getElementById("uiLocations");
-          $('#uiLocations').empty();
-          for (var i in locations) {
-              var opt = new Option(locations[i]);
-              $('#uiLocations').append(opt);
-          }
+  var url = baseURL + "/get_location_names";
+
+  // ✅ Simpler GET request
+  $.get(url, function (data, status) {
+    console.log("got response for get_location_names request");
+    if (data && data.locations) {
+      $('#uiLocations').empty();
+      for (var i in data.locations) {
+        $('#uiLocations').append(new Option(data.locations[i]));
       }
+    }
+  }).fail(function (xhr, status, error) {
+    console.error("Error fetching locations:", status, error, xhr.responseText);
   });
 }
 
